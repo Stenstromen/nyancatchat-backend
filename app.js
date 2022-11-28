@@ -1,15 +1,28 @@
 const con = require("./mysql/db.mysql");
-const express = require("express");
 const bodyParser = require("body-parser");
 const compression = require("compression");
+const express = require("express");
 const app = express();
-const http = require("http");
-const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server);
+const http = require('http').Server(app);
+const cors = require('cors');
+app.use(cors());
+const io = require('socket.io')(http, {
+  cors: {
+      origin: "http://localhost:3000"
+  }
+});
+
+
 const model = require("./models/chat.model");
-//const genKey = require("./enc/rndkey.enc");
 const { encrypt, decrypt } = require("./enc/crypto.enc");
+const getTime = () => {
+  const dateObj = new Date();
+  let hour = dateObj.getHours();
+  let minute = dateObj.getMinutes();
+  hour = ("0" + hour).slice(-2);
+  minute = ("0" + minute).slice(-2);
+  return hour + ":" + minute;
+};
 
 let sharedlinkjoin = false;
 
@@ -240,6 +253,6 @@ io.on("connection", (socket) => {
     }
   });
 });
-server.listen(8080, () => {
+http.listen(8080, () => {
   console.log("Server listening on localhost:8080");
 });
