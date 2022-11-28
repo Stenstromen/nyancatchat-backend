@@ -1,0 +1,11 @@
+# NyanCatChat-Backend
+## Backend for NyanCatChat-Frontend
+
+### Required env
+```
+MYSQL_HOSTNAME = INT || STRING
+MYSQL_DATABASE = STRING
+MYSQL_USERNAME = STRING
+MYSQL_PASSWORD = STRING
+SECRET_KEY = STRING
+```
