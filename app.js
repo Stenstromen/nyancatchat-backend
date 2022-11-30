@@ -123,6 +123,14 @@ io.on("connection", (socket) => {
         room: data.room,
       };
       socket.to(roomPacket.room).emit("chat message", roomPacket);
+      
+      socket.to(roomPacket.room).emit("user join", {
+        origin: "MasterServer",
+        time: getTime(),
+        user: "🖥 Server",
+        message: data.user,
+        room: data.room,
+      });
 
       socket.join(data.room);
 
