@@ -122,17 +122,30 @@ io.on("connection", (socket) => {
         message: data.user + " has joined " + data.room + " 😻",
         room: data.room,
       };
-      socket.to(roomPacket.room).emit("chat message", roomPacket);
+      //socket.to(roomPacket.room).emit("chat message", roomPacket);
       
-      socket.to(roomPacket.room).emit("user join", {
+/*       model.roomUsers.push({
+        room:data.room,
+        user:data.user
+      }) */
+      
+
+      console.log(model.roomUsers)
+
+      
+    /*   socket.to(data.room).emit("user join", {
         origin: "MasterServer",
         time: getTime(),
         user: "🖥 Server",
         message: data.user,
         room: data.room,
-      });
+      }); */
+
+      //socket.to(data.room).emit("user join", model.roomUsers)
 
       socket.join(data.room);
+      model.roomUsersFunc(data.room, data.user)
+      socket.to(data.room).emit("user join", model.roomUsers)
 
       const arr = Array.from(io.sockets.adapter.rooms);
       const filtered = arr.filter((room) => !room[1].has(room[0]));
@@ -167,7 +180,10 @@ io.on("connection", (socket) => {
         }
       });
 
+      //socket.to(data.room).emit("user join", model.roomUsers)
+
       function filterMessageData() {
+        //socket.to(data.room).emit("user join", model.roomUsers)
         let filtered_arr = [];
         for (let i = 0; i < result_arr.length; i++) {
           filtered_arr.push({

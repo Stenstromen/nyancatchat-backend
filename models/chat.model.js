@@ -1,4 +1,12 @@
 const con = require("../mysql/db.mysql");
+let roomUsers = [];
+
+async function roomUsersFunc(room, user) {
+  await roomUsers.push({
+    room:room,
+    user:user
+  })
+}
 
 function insertMessage(user, messagecontent, messageiv, room) {
   let sql = `INSERT INTO msgtable (user, messagecontent, messageiv, room) VALUES ("${user}", "${messagecontent}", "${messageiv}", "${room}")`;
@@ -34,4 +42,6 @@ module.exports = {
   checkForMessagesUser,
   deleteMessages,
   insertMessage,
+  roomUsersFunc,
+  roomUsers,
 };
