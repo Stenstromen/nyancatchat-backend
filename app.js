@@ -3,12 +3,13 @@ const bodyParser = require("body-parser");
 const compression = require("compression");
 const express = require("express");
 const app = express();
+const chatRouter = require("./routers/chat.router")
 const http = require('http').Server(app);
 const cors = require('cors');
 app.use(cors());
 const io = require('socket.io')(http, {
   cors: {
-      origin: "http://localhost:3000"
+      origin: process.env.CORS_ORIGIN
   }
 });
 
@@ -29,6 +30,7 @@ let sharedlinkjoin = false;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(compression());
+app.use(chatRouter);
 
 app.post("/user", (req, res) => {
   key = req.body.key;
@@ -76,13 +78,29 @@ io.on("connection", (socket) => {
       message: data.user + " has left " + data.room + " 😿",
       room: data.room,
     };
-    socket.to(roomPacket.room).emit("chat message", roomPacket);
+    socket.to(roomPacket.room).emit("user leaves", roomPacket);
 
     if (!socket.rooms.has(data.room)) return;
 
     console.log(`${socket.id} has left room ${data.room}`);
 
+/*     model.roomUsers
+    .filter(({ room }) => room === data.room)
+    .splice(
+      model.roomUsers.findIndex((obj) => {
+        return obj.name === data.user;
+      }, 1)
+    );
+ */
+    const idxObj = model.roomUsers.findIndex(object => {
+      return object.user === data.user;
+    });
+    model.roomUsers.splice(idxObj, 1);
+
+    console.log("blaaaah " + model.roomUsers)
+
     socket.leave(data.room);
+    socket.to(data.room).emit("user join", model.roomUsers)
 
     const arr = Array.from(io.sockets.adapter.rooms);
     const filtered = arr.filter((room) => !room[1].has(room[0]));
@@ -122,7 +140,7 @@ io.on("connection", (socket) => {
         message: data.user + " has joined " + data.room + " 😻",
         room: data.room,
       };
-      //socket.to(roomPacket.room).emit("chat message", roomPacket);
+      socket.to(roomPacket.room).emit("user joines", roomPacket);
       
 /*       model.roomUsers.push({
         room:data.room,
