@@ -232,11 +232,11 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("typing", (data) => {
+  /* socket.on("typing", (data) => {
     console.log("blah")
     console.log(data)
-    socket.to(data.room).emit("typingResponse", data)
-  });
+    socket.to(data.room).emit("typing Response", data)
+  }); */
 
   socket.on("disconnect", () => {
     console.log("user disconnected");
@@ -298,11 +298,11 @@ io.on("connection", (socket) => {
     }
   }); */
 
-  /* socket.on("typing", (data) => {
+  socket.on("typing", (data) => {
     console.log("blah")
     console.log(data)
-    socket.to(data.room).emit("typingResponse", data)
-  }); */
+    socket.to(data.room).emit("typing Response", data)
+  });
 });
 http.listen(8080, () => {
   console.log("Server listening on localhost:8080");
