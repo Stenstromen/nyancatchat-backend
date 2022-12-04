@@ -7,6 +7,15 @@ const chatRouter = require("./routers/chat.router");
 const http = require("http").Server(app);
 const cors = require("cors");
 app.use(cors());
+app.use((req, res, next) => {
+  if (
+    !req.headers.authorization ||
+    req.headers.authorization !== process.env.AUTHHEADER_PASSWORD
+  ) {
+    return res.status(403).json({ error: "Invalid or no credentials" });
+  }
+  next();
+});
 const io = require("socket.io")(http, {
   cors: {
     origin: process.env.CORS_ORIGIN,
@@ -24,103 +33,35 @@ const getTime = () => {
   return hour + ":" + minute;
 };
 
-let sharedlinkjoin = false;
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(compression());
 app.use(chatRouter);
 
-app.post("/user", (req, res) => {
-  key = req.body.key;
-  username = req.body.username;
-  room = req.body.room;
-  res.redirect("/user");
-});
-
-/* app.get("/user", (req, res) => {
-  if (req.query.username && req.query.room && req.query.key) {
-    username = req.query.username;
-    room = req.query.room;
-    key = req.query.key;
-    sharedlinkjoin = true;
-  }
-  res.render("chatindex.ejs", {
-    username: username,
-    room: room,
-    key: key,
-    shareUsername: shareUsername(),
-    sharedlinkjoin: sharedlinkjoin,
-  });
-});
-
-app.get("/", (req, res, next) => {
-  res.render("index.ejs", {
-    username: username,
-    room: room,
-    genKey: genKey(),
-    shareUsername: shareUsername(),
-    nyanRoomBusy: nyanRoomBusy,
-    dogeRoomBusy: dogeRoomBusy,
-    pusheenRoomBusy: pusheenRoomBusy,
-  });
-}); */
-
 io.on("connection", (socket) => {
   console.log("a user connected" + socket.id);
 
   socket.on("leave_room", (data) => {
-    let roomPacket = {
+    socket.to(data.room).emit("user leaves", {
       origin: "MasterServer",
       time: getTime(),
       user: "🖥 Server",
       message: data.user + " has left " + data.room + " 😿",
       room: data.room,
-    };
-    socket.to(roomPacket.room).emit("user leaves", roomPacket);
+    });
 
-    if (!socket.rooms.has(data.room)) return;
-
-    console.log(`${socket.id} has left room ${data.room}`);
-
-    /*     model.roomUsers
-    .filter(({ room }) => room === data.room)
-    .splice(
-      model.roomUsers.findIndex((obj) => {
-        return obj.name === data.user;
-      }, 1)
-    );
- */
     const idxObj = model.roomUsers.findIndex((object) => {
       return object.user === data.user;
     });
     model.roomUsers.splice(idxObj, 1);
 
-    console.log("blaaaah " + model.roomUsers);
-
     socket.leave(data.room);
     socket.to(data.room).emit("user join", model.roomUsers);
 
-    const arr = Array.from(io.sockets.adapter.rooms);
-    const filtered = arr.filter((room) => !room[1].has(room[0]));
-    const res = filtered.map((i) => i[0]);
-    if (res[0] === "nyanRoom") {
-      nyanRoomBusy = "yes";
-    } else {
-      nyanRoomBusy = "no";
-    }
-    if (res[0] === "dogeRoom") {
-      dogeRoomBusy = "yes";
-    } else {
-      dogeRoomBusy = "no";
-    }
-    if (res[0] === "pusheenRoom") {
-      pusheenRoomBusy = "yes";
-    } else {
-      pusheenRoomBusy = "no";
-    }
+    console.log(`${socket.id} has left room ${data.room}`);
 
-    console.log(model.checkForMessagesUser(data.user));
+    if (!socket.rooms.has(data.room)) return;
+
     if (model.checkForMessagesUser(data.user) == 0) return;
 
     model.deleteMessages(data.user);
@@ -132,54 +73,17 @@ io.on("connection", (socket) => {
     } else {
       console.log(`${socket.id} has joined ${data.room}`);
 
-      let roomPacket = {
+      socket.to(data.room).emit("user joines", {
         origin: "MasterServer",
         time: getTime(),
         user: "🖥 Server",
         message: data.user + " has joined " + data.room + " 😻",
         room: data.room,
-      };
-      socket.to(roomPacket.room).emit("user joines", roomPacket);
-
-      /*       model.roomUsers.push({
-        room:data.room,
-        user:data.user
-      }) */
-
-      console.log(model.roomUsers);
-
-      /*   socket.to(data.room).emit("user join", {
-        origin: "MasterServer",
-        time: getTime(),
-        user: "🖥 Server",
-        message: data.user,
-        room: data.room,
-      }); */
-
-      //socket.to(data.room).emit("user join", model.roomUsers)
+      });
 
       socket.join(data.room);
       model.roomUsersFunc(data.room, data.user);
       socket.to(data.room).emit("user join", model.roomUsers);
-
-      const arr = Array.from(io.sockets.adapter.rooms);
-      const filtered = arr.filter((room) => !room[1].has(room[0]));
-      const res = filtered.map((i) => i[0]);
-      if (res[0] === "nyanRoom") {
-        nyanRoomBusy = "yes";
-      } else {
-        nyanRoomBusy = "no";
-      }
-      if (res[0] === "dogeRoom") {
-        dogeRoomBusy = "yes";
-      } else {
-        dogeRoomBusy = "no";
-      }
-      if (res[0] === "pusheenRoom") {
-        pusheenRoomBusy = "yes";
-      } else {
-        pusheenRoomBusy = "no";
-      }
 
       let result_arr = [];
 
@@ -195,10 +99,7 @@ io.on("connection", (socket) => {
         }
       });
 
-      //socket.to(data.room).emit("user join", model.roomUsers)
-
       function filterMessageData() {
-        //socket.to(data.room).emit("user join", model.roomUsers)
         let filtered_arr = [];
         for (let i = 0; i < result_arr.length; i++) {
           filtered_arr.push({
@@ -232,32 +133,8 @@ io.on("connection", (socket) => {
     }
   });
 
-  /* socket.on("typing", (data) => {
-    console.log("blah")
-    console.log(data)
-    socket.to(data.room).emit("typing Response", data)
-  }); */
-
   socket.on("disconnect", () => {
     console.log("user disconnected");
-    const arr = Array.from(io.sockets.adapter.rooms);
-    const filtered = arr.filter((room) => !room[1].has(room[0]));
-    const res = filtered.map((i) => i[0]);
-    if (res[0] === "nyanRoom") {
-      nyanRoomBusy = "yes";
-    } else {
-      nyanRoomBusy = "no";
-    }
-    if (res[0] === "dogeRoom") {
-      dogeRoomBusy = "yes";
-    } else {
-      dogeRoomBusy = "no";
-    }
-    if (res[0] === "pusheenRoom") {
-      pusheenRoomBusy = "yes";
-    } else {
-      pusheenRoomBusy = "no";
-    }
   });
 
   socket.on("chat message", (msg) => {
@@ -266,22 +143,20 @@ io.on("connection", (socket) => {
       message: encrypt(msg.message),
       room: msg.room,
     };
-    let roomPacket = {
+    socket.to(msg.room).emit("chat message", {
       origin: "server",
       time: getTime(),
       user: msg.user,
       message: msg.message,
       room: msg.room,
-    };
-    let senderPacket = {
+    });
+    socket.emit("chat message", {
       origin: "sender",
       time: getTime(),
       user: msg.user,
       message: msg.message,
       room: msg.room,
-    };
-    socket.to(msg.room).emit("chat message", roomPacket);
-    socket.emit("chat message", senderPacket); //sending to sender-client only
+    }); //sending to sender-client only
     model.insertMessage(
       packet.user,
       packet.message.content,
@@ -290,18 +165,8 @@ io.on("connection", (socket) => {
     );
   });
 
-  /*  socket.on("typing", (data) => {
-    if (data.typing == true) {
-      socket.to(data.room).emit("display", data);
-    } else {
-      socket.to(data.room).emit("display", data);
-    }
-  }); */
-
   socket.on("typing", (data) => {
-    console.log("blah")
-    console.log(data)
-    socket.to(data.room).emit("typing Response", data)
+    socket.to(data.room).emit("typing Response", data);
   });
 });
 http.listen(8080, () => {

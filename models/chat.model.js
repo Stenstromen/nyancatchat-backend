@@ -23,7 +23,6 @@ function checkForMessagesUser(user) {
       console.log(`No messages for ${user} in database`);
       return;
     }
-    console.log(result.length);
     return result.length;
   });
 }

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nyancatchat-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nyancatchat-backend
+  template:
+    metadata:
+      labels:
+        app: nyancatchat-backend
+    spec:
+      containers:
+        - name: nyancatchat
+          image: dockr.it/nyancatchatbackend:k8s
+          imagePullPolicy: Always
+          env:
+          - name: MYSQL_HOSTNAME
+            value: mariadb-service
+          - name: MYSQL_DATABASE
+            value: nyancatchat
+          - name: MYSQL_USERNAME
+            value: nyancatchat
+          - name: CORS_ORIGIN
+            value: https://chat.nyancat.se
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: nyancatchatmysqlpassword
+                key: password
+          - name: AUTHHEADER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: nyancatchatbackendauthheaderpassword
+                key: password
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: nyancatchatbackendsecretkey
+                key: password
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: dockrit
