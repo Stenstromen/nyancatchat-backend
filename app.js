@@ -3,16 +3,15 @@ const bodyParser = require("body-parser");
 const compression = require("compression");
 const express = require("express");
 const app = express();
-const chatRouter = require("./routers/chat.router")
-const http = require('http').Server(app);
-const cors = require('cors');
+const chatRouter = require("./routers/chat.router");
+const http = require("http").Server(app);
+const cors = require("cors");
 app.use(cors());
-const io = require('socket.io')(http, {
+const io = require("socket.io")(http, {
   cors: {
-      origin: process.env.CORS_ORIGIN
-  }
+    origin: process.env.CORS_ORIGIN,
+  },
 });
-
 
 const model = require("./models/chat.model");
 const { encrypt, decrypt } = require("./enc/crypto.enc");
@@ -84,7 +83,7 @@ io.on("connection", (socket) => {
 
     console.log(`${socket.id} has left room ${data.room}`);
 
-/*     model.roomUsers
+    /*     model.roomUsers
     .filter(({ room }) => room === data.room)
     .splice(
       model.roomUsers.findIndex((obj) => {
@@ -92,15 +91,15 @@ io.on("connection", (socket) => {
       }, 1)
     );
  */
-    const idxObj = model.roomUsers.findIndex(object => {
+    const idxObj = model.roomUsers.findIndex((object) => {
       return object.user === data.user;
     });
     model.roomUsers.splice(idxObj, 1);
 
-    console.log("blaaaah " + model.roomUsers)
+    console.log("blaaaah " + model.roomUsers);
 
     socket.leave(data.room);
-    socket.to(data.room).emit("user join", model.roomUsers)
+    socket.to(data.room).emit("user join", model.roomUsers);
 
     const arr = Array.from(io.sockets.adapter.rooms);
     const filtered = arr.filter((room) => !room[1].has(room[0]));
@@ -141,17 +140,15 @@ io.on("connection", (socket) => {
         room: data.room,
       };
       socket.to(roomPacket.room).emit("user joines", roomPacket);
-      
-/*       model.roomUsers.push({
+
+      /*       model.roomUsers.push({
         room:data.room,
         user:data.user
       }) */
-      
 
-      console.log(model.roomUsers)
+      console.log(model.roomUsers);
 
-      
-    /*   socket.to(data.room).emit("user join", {
+      /*   socket.to(data.room).emit("user join", {
         origin: "MasterServer",
         time: getTime(),
         user: "🖥 Server",
@@ -162,8 +159,8 @@ io.on("connection", (socket) => {
       //socket.to(data.room).emit("user join", model.roomUsers)
 
       socket.join(data.room);
-      model.roomUsersFunc(data.room, data.user)
-      socket.to(data.room).emit("user join", model.roomUsers)
+      model.roomUsersFunc(data.room, data.user);
+      socket.to(data.room).emit("user join", model.roomUsers);
 
       const arr = Array.from(io.sockets.adapter.rooms);
       const filtered = arr.filter((room) => !room[1].has(room[0]));
@@ -235,6 +232,12 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("typing", (data) => {
+    console.log("blah")
+    console.log(data)
+    socket.to(data.room).emit("typingResponse", data)
+  });
+
   socket.on("disconnect", () => {
     console.log("user disconnected");
     const arr = Array.from(io.sockets.adapter.rooms);
@@ -287,13 +290,19 @@ io.on("connection", (socket) => {
     );
   });
 
-  socket.on("typing", (data) => {
+  /*  socket.on("typing", (data) => {
     if (data.typing == true) {
       socket.to(data.room).emit("display", data);
     } else {
       socket.to(data.room).emit("display", data);
     }
-  });
+  }); */
+
+  /* socket.on("typing", (data) => {
+    console.log("blah")
+    console.log(data)
+    socket.to(data.room).emit("typingResponse", data)
+  }); */
 });
 http.listen(8080, () => {
   console.log("Server listening on localhost:8080");
