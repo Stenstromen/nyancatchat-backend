@@ -90,6 +90,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("chat message", (msg) => {
+    if (msg.message.length >= 125) {
+      console.log(`Message from ${msg.user} to large! Aborting`);
+      return;
+    }
     let packet = {
       user: msg.user,
       message: encrypt(msg.message),
