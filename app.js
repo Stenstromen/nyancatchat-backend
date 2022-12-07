@@ -23,7 +23,7 @@ const io = require("socket.io")(http, {
 });
 
 const model = require("./models/chat.model");
-const { encrypt, decrypt } = require("./enc/crypto.enc");
+const { encrypt } = require("./enc/crypto.enc");
 const getTime = () => {
   const dateObj = new Date();
   let hour = dateObj.getHours();
@@ -60,8 +60,6 @@ io.on("connection", (socket) => {
 
     console.log(`${socket.id} has left room ${data.room}`);
 
-    if (!socket.rooms.has(data.room)) return;
-
     if (model.checkForMessagesUser(data.user) == 0) return;
 
     model.deleteMessages(data.user);
@@ -84,52 +82,6 @@ io.on("connection", (socket) => {
       socket.join(data.room);
       model.roomUsersFunc(data.room, data.user);
       socket.to(data.room).emit("user join", model.roomUsers);
-
-      let result_arr = [];
-
-      function setValue(value) {
-        result_arr = value;
-      }
-
-      con.query("SELECT * FROM msgtable", function (err, rows, fields) {
-        if (err) throw err;
-        else {
-          setValue(rows);
-          filterMessageData();
-        }
-      });
-
-      function filterMessageData() {
-        let filtered_arr = [];
-        for (let i = 0; i < result_arr.length; i++) {
-          filtered_arr.push({
-            user: result_arr[i].user,
-            room: result_arr[i].room,
-            message: {
-              iv: result_arr[i].messageiv,
-              content: result_arr[i].messagecontent,
-            },
-          });
-        }
-        for (let i = 0; i < filtered_arr.length; i++) {
-          if (filtered_arr[i].user === data.user) {
-            let packet = {
-              origin: "sender",
-              user: filtered_arr[i].user.toString(),
-              message: decrypt(filtered_arr[i].message).toString(),
-            };
-
-            socket.emit("chat message", packet); //sending to sender-client only
-          } else if (filtered_arr[i].user !== data.user) {
-            let packet = {
-              origin: "server",
-              user: filtered_arr[i].user.toString(),
-              message: decrypt(filtered_arr[i].message).toString(),
-            };
-            socket.emit("chat message", packet); //sending to sender-client only
-          }
-        }
-      }
     }
   });
 
